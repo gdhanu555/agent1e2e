@@ -1,0 +1,15 @@
+node_modules/
+dist/
+test-results/screenshots/
+test-results/videos/
+test-results/*.json
+test-results/*.xml
+playwright-report/
+playwright/.cache/
+*.log
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
+!.gitignore
+

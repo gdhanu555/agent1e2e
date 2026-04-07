@@ -2,42 +2,37 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * Cart Page Object Model
+ * Cart Page Object Model for SauceDemo
+ * URL: https://www.saucedemo.com/cart.html
  */
 export class CartPage extends BasePage {
-  // Page locators
+  // Page locators for SauceDemo
   readonly cartItems: Locator;
-  readonly emptyCartMessage: Locator;
-  readonly cartTotal: Locator;
-  readonly subtotal: Locator;
-  readonly checkoutButton: Locator;
-  readonly continueShoppingButton: Locator;
-  readonly quantityInputs: Locator;
+  readonly cartItemNames: Locator;
+  readonly cartItemPrices: Locator;
+  readonly cartItemQuantities: Locator;
   readonly removeButtons: Locator;
-  readonly increaseButtons: Locator;
-  readonly decreaseButtons: Locator;
+  readonly continueShoppingButton: Locator;
+  readonly checkoutButton: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    // Initialize locators - will be updated after exploratory testing
-    this.cartItems = page.locator('.cart-item, [data-testid="cart-item"], tr.cart-item');
-    this.emptyCartMessage = page.locator(':text("Your cart is empty"), .empty-cart, [data-testid="empty-cart"]');
-    this.cartTotal = page.locator('.cart-total, [data-testid="cart-total"], .total');
-    this.subtotal = page.locator('.subtotal, [data-testid="subtotal"]');
-    this.checkoutButton = page.locator('button:has-text("Checkout"), a:has-text("Proceed to Checkout"), [data-testid="checkout"]');
-    this.continueShoppingButton = page.locator('a:has-text("Continue Shopping"), button:has-text("Continue")');
-    this.quantityInputs = page.locator('.quantity input, input[type="number"], [data-testid="quantity"]');
-    this.removeButtons = page.locator('button:has-text("Remove"), .remove-item, [data-testid="remove"]');
-    this.increaseButtons = page.locator('.quantity-plus, button:has-text("+"), [data-testid="increase"]');
-    this.decreaseButtons = page.locator('.quantity-minus, button:has-text("-"), [data-testid="decrease"]');
+    // SauceDemo specific selectors
+    this.cartItems = page.locator('.cart_item');
+    this.cartItemNames = page.locator('.inventory_item_name');
+    this.cartItemPrices = page.locator('.inventory_item_price');
+    this.cartItemQuantities = page.locator('.cart_quantity');
+    this.removeButtons = page.locator('button[data-test^="remove"]');
+    this.continueShoppingButton = page.locator('#continue-shopping');
+    this.checkoutButton = page.locator('#checkout');
   }
 
   /**
    * Navigate to cart page
    */
   async goto(): Promise<void> {
-    await this.page.goto('/cart');
+    await this.page.goto('/cart.html');
   }
 
   /**
@@ -59,29 +54,51 @@ export class CartPage extends BasePage {
    * Check if cart is empty
    */
   async isCartEmpty(): Promise<boolean> {
-    return await this.isVisible(this.emptyCartMessage);
+    return (await this.getCartItemCount()) === 0;
   }
 
   /**
-   * Get cart total amount
+   * Get item name by index
    */
-  async getCartTotal(): Promise<string> {
-    await this.waitForVisible(this.cartTotal);
-    return await this.getText(this.cartTotal);
+  async getItemName(index: number): Promise<string> {
+    const names = await this.cartItemNames.all();
+    if (index < names.length) {
+      return await this.getText(names[index]);
+    }
+    return '';
   }
 
   /**
-   * Get subtotal amount
+   * Get item price by index
    */
-  async getSubtotal(): Promise<string> {
-    return await this.getText(this.subtotal);
+  async getItemPrice(index: number): Promise<string> {
+    const prices = await this.cartItemPrices.all();
+    if (index < prices.length) {
+      return await this.getText(prices[index]);
+    }
+    return '';
   }
 
   /**
-   * Proceed to checkout
+   * Get item quantity by index
    */
-  async proceedToCheckout(): Promise<void> {
-    await this.click(this.checkoutButton);
+  async getItemQuantity(index: number): Promise<string> {
+    const qtys = await this.cartItemQuantities.all();
+    if (index < qtys.length) {
+      return await this.getText(qtys[index]);
+    }
+    return '';
+  }
+
+  /**
+   * Remove item by index
+   */
+  async removeItem(itemIndex: number): Promise<void> {
+    const buttons = await this.removeButtons.all();
+    if (itemIndex < buttons.length) {
+      await buttons[itemIndex].click();
+      await this.wait(500);
+    }
   }
 
   /**
@@ -92,94 +109,9 @@ export class CartPage extends BasePage {
   }
 
   /**
-   * Set quantity for item by index
+   * Proceed to checkout
    */
-  async setQuantity(itemIndex: number, quantity: number): Promise<void> {
-    const inputs = await this.quantityInputs.all();
-    if (itemIndex < inputs.length) {
-      await inputs[itemIndex].fill(quantity.toString());
-      await this.wait(500); // Wait for price update
-    }
-  }
-
-  /**
-   * Increase quantity for item by index
-   */
-  async increaseQuantity(itemIndex: number): Promise<void> {
-    const buttons = await this.increaseButtons.all();
-    if (itemIndex < buttons.length) {
-      await buttons[itemIndex].click();
-      await this.wait(500); // Wait for price update
-    }
-  }
-
-  /**
-   * Decrease quantity for item by index
-   */
-  async decreaseQuantity(itemIndex: number): Promise<void> {
-    const buttons = await this.decreaseButtons.all();
-    if (itemIndex < buttons.length) {
-      await buttons[itemIndex].click();
-      await this.wait(500); // Wait for price update
-    }
-  }
-
-  /**
-   * Remove item by index
-   */
-  async removeItem(itemIndex: number): Promise<void> {
-    const buttons = await this.removeButtons.all();
-    if (itemIndex < buttons.length) {
-      await buttons[itemIndex].click();
-      await this.wait(500); // Wait for cart update
-    }
-  }
-
-  /**
-   * Get item name by index
-   */
-  async getItemName(index: number): Promise<string> {
-    const items = await this.getCartItems();
-    if (index < items.length) {
-      const name = items[index].locator('.item-name, .product-name, .name').first();
-      return await this.getText(name);
-    }
-    return '';
-  }
-
-  /**
-   * Get item price by index
-   */
-  async getItemPrice(index: number): Promise<string> {
-    const items = await this.getCartItems();
-    if (index < items.length) {
-      const price = items[index].locator('.item-price, .price, [data-testid="price"]').first();
-      return await this.getText(price);
-    }
-    return '';
-  }
-
-  /**
-   * Get item quantity by index
-   */
-  async getItemQuantity(index: number): Promise<string> {
-    const items = await this.getCartItems();
-    if (index < items.length) {
-      const qty = items[index].locator('.item-quantity, .quantity, [data-testid="quantity"]').first();
-      return await this.getText(qty);
-    }
-    return '';
-  }
-
-  /**
-   * Get item subtotal by index
-   */
-  async getItemSubtotal(index: number): Promise<string> {
-    const items = await this.getCartItems();
-    if (index < items.length) {
-      const subtotal = items[index].locator('.item-subtotal, .subtotal').first();
-      return await this.getText(subtotal);
-    }
-    return '';
+  async proceedToCheckout(): Promise<void> {
+    await this.click(this.checkoutButton);
   }
 }

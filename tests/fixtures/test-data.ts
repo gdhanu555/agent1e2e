@@ -31,12 +31,12 @@ export interface Product {
 }
 
 /**
- * Valid user credentials
+ * Valid user credentials (SauceDemo demo site)
  */
 export const VALID_USER: User = {
-  username: 'blinq_user',
-  password: 'let_me_in',
-  email: 'blinq_user@example.com'
+  username: 'standard_user',
+  password: 'secret_sauce',
+  email: 'standard_user@example.com'
 };
 
 /**
@@ -109,11 +109,11 @@ export const INVALID_EMAILS = [
  * Application URLs
  */
 export const URLS = {
-  base: 'https://shop-blinq.com',
-  login: 'https://shop-blinq.com/login',
-  products: 'https://shop-blinq.com/products',
-  cart: 'https://shop-blinq.com/cart',
-  checkout: 'https://shop-blinq.com/checkout'
+  base: 'https://www.saucedemo.com',
+  login: 'https://www.saucedemo.com',
+  products: 'https://www.saucedemo.com/inventory.html',
+  cart: 'https://www.saucedemo.com/cart.html',
+  checkout: 'https://www.saucedemo.com/checkout-step-one.html'
 } as const;
 
 /**

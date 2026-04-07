@@ -2,48 +2,52 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * Products Page Object Model
+ * Products Page Object Model for SauceDemo
+ * URL: https://www.saucedemo.com/inventory.html
  */
 export class ProductsPage extends BasePage {
-  // Page locators
-  readonly productGrid: Locator;
-  readonly productCards: Locator;
-  readonly cartIcon: Locator;
-  readonly cartCount: Locator;
+  // Page locators for SauceDemo
+  readonly productList: Locator;
   readonly addToCartButtons: Locator;
+  readonly cartIcon: Locator;
+  readonly cartBadge: Locator;
+  readonly productNames: Locator;
+  readonly productPrices: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    // Initialize locators - will be updated after exploratory testing
-    this.productGrid = page.locator('.product-grid, .products, [data-testid="product-list"]').first();
-    this.productCards = page.locator('.product, .product-item, [data-testid="product"]');
-    this.cartIcon = page.locator('.cart, [data-testid="cart"], a[href*="cart"], .cart-icon').first();
-    this.cartCount = page.locator('.cart-count, [data-testid="cart-count"], .badge').first();
-    this.addToCartButtons = page.locator('button:has-text("Add to Cart"), button:has-text("Add"), .add-to-cart');
+    // SauceDemo specific selectors
+    this.productList = page.locator('.inventory_list');
+    this.addToCartButtons = page.locator('button[data-test^="add-to-cart"]');
+    this.cartIcon = page.locator('a.shopping_cart_link');
+    this.cartBadge = page.locator('.shopping_cart_badge');
+    this.productNames = page.locator('.inventory_item_name');
+    this.productPrices = page.locator('.inventory_item_price');
   }
 
   /**
    * Navigate to products page
    */
   async goto(): Promise<void> {
-    await this.page.goto('/products');
+    await this.page.goto('/inventory.html');
   }
 
   /**
-   * Get all product cards
+   * Get all products
    */
-  async getProductCards(): Promise<Locator[]> {
-    await this.waitForVisible(this.productGrid);
-    return await this.productCards.all();
+  async getProducts(): Promise<Locator[]> {
+    await this.waitForVisible(this.productList);
+    const items = this.page.locator('.inventory_item');
+    return await items.all();
   }
 
   /**
    * Get product count
    */
   async getProductCount(): Promise<number> {
-    const cards = await this.getProductCards();
-    return cards.length;
+    const products = await this.getProducts();
+    return products.length;
   }
 
   /**
@@ -53,7 +57,7 @@ export class ProductsPage extends BasePage {
     const buttons = await this.addToCartButtons.all();
     if (index < buttons.length) {
       await buttons[index].click();
-      await this.wait(500); // Wait for cart update
+      await this.wait(500);
     }
   }
 
@@ -61,17 +65,20 @@ export class ProductsPage extends BasePage {
    * Add multiple products to cart
    */
   async addMultipleProductsToCart(count: number): Promise<void> {
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count && i < 6; i++) {
       await this.addProductToCart(i);
     }
   }
 
   /**
-   * Get cart item count
+   * Get cart badge count
    */
   async getCartCount(): Promise<string> {
-    const text = await this.getText(this.cartCount);
-    return text.trim();
+    const badge = this.cartBadge.first();
+    if (await badge.isVisible()) {
+      return await this.getText(badge);
+    }
+    return '0';
   }
 
   /**
@@ -85,10 +92,9 @@ export class ProductsPage extends BasePage {
    * Get product name by index
    */
   async getProductName(index: number): Promise<string> {
-    const cards = await this.getProductCards();
-    if (index < cards.length) {
-      const name = cards[index].locator('.product-name, .name, h3, h4').first();
-      return await this.getText(name);
+    const names = await this.productNames.all();
+    if (index < names.length) {
+      return await this.getText(names[index]);
     }
     return '';
   }
@@ -97,10 +103,9 @@ export class ProductsPage extends BasePage {
    * Get product price by index
    */
   async getProductPrice(index: number): Promise<string> {
-    const cards = await this.getProductCards();
-    if (index < cards.length) {
-      const price = cards[index].locator('.price, .product-price, [data-testid="price"]').first();
-      return await this.getText(price);
+    const prices = await this.productPrices.all();
+    if (index < prices.length) {
+      return await this.getText(prices[index]);
     }
     return '';
   }

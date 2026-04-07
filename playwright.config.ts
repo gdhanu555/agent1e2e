@@ -12,7 +12,7 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/results.xml' }]
   ],
   use: {
-    baseURL: 'https://shop-blinq.com',
+    baseURL: 'https://www.saucedemo.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

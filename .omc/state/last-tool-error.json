@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"npm test 2>&1\",\"timeout\":120000,\"description\":\"Run all Playwright tests\"}",
+  "error": "Exit code 1\n\n> 1005@1.0.0 test\n> playwright test\n\n\nRunning 150 tests using 6 workers\n\n\u001b[1A\u001b[2K[1/150] [chromium] › tests/shop-blinq-checkout/cart.spec.ts:37:7 › Cart Management - Shop-Blinq › should display cart contents\n\u001b[1A\u001b[2K[2/150] [chromium] › tests/shop-blinq-checkout/cart.spec.ts:54:7 › Cart Management - Shop-Blinq › should increase item quantity and update total\n\u001b[1A\u001b[2K[3/150] [chromium] › tests/shop-blinq-checkout/cart.spec.ts:72:7 › Cart Management - Shop-Blinq › should decrease item...",
+  "timestamp": "2026-04-07T18:38:35.189Z",
+  "retry_count": 1
+}

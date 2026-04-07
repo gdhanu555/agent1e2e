@@ -2,204 +2,167 @@ import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
- * Checkout Page Object Model
- * URL: https://shop-blinq.com/checkout
+ * Checkout Page Object Model for SauceDemo
+ * URL: https://www.saucedemo.com/checkout-step-one.html
  */
 export class CheckoutPage extends BasePage {
-  // Shipping form locators
-  readonly fullNameInput: Locator;
-  readonly addressInput: Locator;
-  readonly cityInput: Locator;
-  readonly stateInput: Locator;
+  // Checkout Step 1 - Information
+  readonly firstNameInput: Locator;
+  readonly lastNameInput: Locator;
   readonly zipInput: Locator;
-  readonly countryInput: Locator;
-  readonly emailInput: Locator;
-
-  // Payment form locators
-  readonly cardNumberInput: Locator;
-  readonly expiryInput: Locator;
-  readonly cvvInput: Locator;
-  readonly cardholderNameInput: Locator;
-
-  // Order summary locators
-  readonly orderSummary: Locator;
-  readonly orderItems: Locator;
-  readonly orderTotal: Locator;
-
-  // Action buttons
-  readonly placeOrderButton: Locator;
-  readonly reviewOrderButton: Locator;
   readonly continueButton: Locator;
+  readonly cancelButton: Locator;
 
-  // Confirmation locators
-  readonly orderConfirmation: Locator;
-  readonly orderNumber: Locator;
+  // Checkout Step 2 - Overview
+  readonly finishButton: Locator;
+  readonly cartItems: Locator;
+  readonly itemTotal: Locator;
+  readonly tax: Locator;
+  readonly total: Locator;
 
-  // Error locators
-  readonly validationErrors: Locator;
+  // Checkout Complete
+  readonly completeHeader: Locator;
+  readonly completeMessage: Locator;
+  readonly backHomeButton: Locator;
+
+  // Errors
   readonly errorMessage: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    // Shipping form locators
-    this.fullNameInput = page.locator('input[name*="name"], input[name*="full"], #fullName, #shippingName').first();
-    this.addressInput = page.locator('input[name*="address"], #address, #shippingAddress').first();
-    this.cityInput = page.locator('input[name*="city"], #city').first();
-    this.stateInput = page.locator('input[name*="state"], select[name*="state"], #state').first();
-    this.zipInput = page.locator('input[name*="zip"], input[name*="postal"], #zip, #postalCode').first();
-    this.countryInput = page.locator('select[name*="country"], #country').first();
-    this.emailInput = page.locator('input[name*="email"], input[type="email"]').first();
+    // Checkout Step 1 locators
+    this.firstNameInput = page.locator('#first-name');
+    this.lastNameInput = page.locator('#last-name');
+    this.zipInput = page.locator('#postal-code');
+    this.continueButton = page.locator('#continue');
+    this.cancelButton = page.locator('#cancel');
 
-    // Payment form locators
-    this.cardNumberInput = page.locator('input[name*="card"], input[name*="number"], #cardNumber').first();
-    this.expiryInput = page.locator('input[name*="expiry"], input[name*="exp"], #expiry').first();
-    this.cvvInput = page.locator('input[name*="cvv"], input[name*="cvc"], #cvv').first();
-    this.cardholderNameInput = page.locator('input[name*="holder"], #cardName').first();
+    // Checkout Step 2 locators
+    this.finishButton = page.locator('#finish');
+    this.cartItems = page.locator('.cart_item');
+    this.itemTotal = page.locator('.summary_subtotal_label');
+    this.tax = page.locator('.summary_tax_label');
+    this.total = page.locator('.summary_total_label');
 
-    // Order summary
-    this.orderSummary = page.locator('.order-summary, [data-testid="order-summary"]');
-    this.orderItems = page.locator('.order-item, [data-testid="order-item"]');
-    this.orderTotal = page.locator('.order-total, [data-testid="order-total"], .total');
+    // Checkout Complete locators
+    this.completeHeader = page.locator('h2.complete-header');
+    this.completeMessage = page.locator('.complete-text');
+    this.backHomeButton = page.locator('#back-to-products');
 
-    // Action buttons
-    this.placeOrderButton = page.locator('button:has-text("Place Order"), button:has-text("Complete Order"), [data-testid="place-order"]');
-    this.reviewOrderButton = page.locator('button:has-text("Review"), button:has-text("Review Order")');
-    this.continueButton = page.locator('button:has-text("Continue"), button:has-text("Next")');
-
-    // Confirmation
-    this.orderConfirmation = page.locator('.order-confirmation, [data-testid="confirmation"], :text("Thank you")');
-    this.orderNumber = page.locator('.order-number, [data-testid="order-number"]');
-
-    // Errors
-    this.validationErrors = page.locator('.error, .validation-error, [data-testid="error"]');
-    this.errorMessage = page.locator('.error-message, [role="alert"]');
+    // Error locator
+    this.errorMessage = page.locator('h3[data-test="error"]');
   }
 
   /**
    * Navigate to checkout page
    */
   async goto(): Promise<void> {
-    await this.page.goto('/checkout');
+    await this.page.goto('/checkout-step-one.html');
   }
 
   /**
-   * Fill shipping form
+   * Fill checkout form (SauceDemo only needs: first name, last name, zip)
    */
-  async fillShippingForm(data: {
-    fullName: string;
-    address: string;
-    city: string;
-    state: string;
+  async fillCheckoutForm(data: {
+    firstName: string;
+    lastName: string;
     zip: string;
-    country: string;
-    email?: string;
   }): Promise<void> {
-    await this.fullNameInput.fill(data.fullName);
-    await this.addressInput.fill(data.address);
-    await this.cityInput.fill(data.city);
-    await this.stateInput.fill(data.state);
+    await this.firstNameInput.fill(data.firstName);
+    await this.lastNameInput.fill(data.lastName);
     await this.zipInput.fill(data.zip);
-    await this.countryInput.selectOption(data.country);
-    if (data.email) {
-      await this.emailInput.fill(data.email);
-    }
   }
 
   /**
-   * Fill payment form
-   */
-  async fillPaymentForm(data: {
-    cardNumber: string;
-    expiry: string;
-    cvv: string;
-    cardholderName: string;
-  }): Promise<void> {
-    await this.cardNumberInput.fill(data.cardNumber);
-    await this.expiryInput.fill(data.expiry);
-    await this.cvvInput.fill(data.cvv);
-    await this.cardholderNameInput.fill(data.cardholderName);
-  }
-
-  /**
-   * Fill all checkout forms
-   */
-  async fillCheckoutForm(shipping: any, payment: any): Promise<void> {
-    await this.fillShippingForm(shipping);
-    await this.fillPaymentForm(payment);
-  }
-
-  /**
-   * Place order
-   */
-  async placeOrder(): Promise<void> {
-    await this.click(this.placeOrderButton);
-  }
-
-  /**
-   * Click continue button
+   * Click continue to go to checkout overview
    */
   async clickContinue(): Promise<void> {
     await this.click(this.continueButton);
   }
 
   /**
-   * Click review order button
+   * Click finish to complete order
    */
-  async clickReviewOrder(): Promise<void> {
-    await this.click(this.reviewOrderButton);
+  async clickFinish(): Promise<void> {
+    await this.click(this.finishButton);
   }
 
   /**
-   * Get order confirmation text
+   * Complete full checkout flow
    */
-  async getOrderConfirmation(): Promise<string> {
-    await this.waitForVisible(this.orderConfirmation);
-    return await this.getText(this.orderConfirmation);
+  async completeCheckout(data: {
+    firstName: string;
+    lastName: string;
+    zip: string;
+  }): Promise<void> {
+    await this.fillCheckoutForm(data);
+    await this.clickContinue();
+    await this.wait(500);
+    await this.clickFinish();
+    await this.wait(1000);
   }
 
   /**
-   * Get order number
+   * Get error message
    */
-  async getOrderNumber(): Promise<string> {
-    await this.waitForVisible(this.orderNumber);
-    return await this.getText(this.orderNumber);
+  async getErrorMessage(): Promise<string> {
+    if (await this.isVisible(this.errorMessage)) {
+      return await this.getText(this.errorMessage);
+    }
+    return '';
+  }
+
+  /**
+   * Check if there are errors
+   */
+  async hasError(): Promise<boolean> {
+    return await this.isVisible(this.errorMessage);
   }
 
   /**
    * Get order total
    */
   async getOrderTotal(): Promise<string> {
-    return await this.getText(this.orderTotal);
+    return await this.getText(this.total);
   }
 
   /**
-   * Get all validation errors
+   * Get item subtotal
    */
-  async getValidationErrors(): Promise<string[]> {
-    const errors = await this.validationErrors.all();
-    const errorTexts: string[] = [];
-    for (const error of errors) {
-      if (await error.isVisible()) {
-        errorTexts.push(await this.getText(error));
-      }
-    }
-    return errorTexts;
-  }
-
-  /**
-   * Check if there are validation errors
-   */
-  async hasValidationErrors(): Promise<boolean> {
-    const errors = await this.getValidationErrors();
-    return errors.length > 0;
+  async getItemSubtotal(): Promise<string> {
+    return await this.getText(this.itemTotal);
   }
 
   /**
    * Get order item count
    */
   async getOrderItemCount(): Promise<number> {
-    const items = await this.orderItems.all();
+    const items = await this.cartItems.all();
     return items.length;
+  }
+
+  /**
+   * Check if checkout is complete
+   */
+  async isComplete(): Promise<boolean> {
+    return await this.isVisible(this.completeHeader);
+  }
+
+  /**
+   * Get complete message
+   */
+  async getCompleteMessage(): Promise<string> {
+    if (await this.isVisible(this.completeHeader)) {
+      return await this.getText(this.completeHeader);
+    }
+    return '';
+  }
+
+  /**
+   * Go back to products
+   */
+  async backToProducts(): Promise<void> {
+    await this.click(this.backHomeButton);
   }
 }

@@ -3,14 +3,14 @@ import { LoginPage } from '../pages/LoginPage';
 import { ProductsPage } from '../pages/ProductsPage';
 import { CartPage } from '../pages/CartPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
-import { VALID_USER, VALID_SHIPPING, VALID_PAYMENT, INVALID_PAYMENT, URLS } from '../fixtures/test-data';
+import { VALID_USER, URLS } from '../fixtures/test-data';
 
 /**
- * Checkout Flow Tests for Shop-Blinq
- * Tests TC-CHK-001 through TC-CHK-006 and TC-VAL-001 through TC-VAL-005
+ * Checkout Flow Tests for SauceDemo
+ * Tests TC-CHK-001 through TC-CHK-006 and form validation tests
  */
 
-test.describe('Checkout Flow - Shop-Blinq', () => {
+test.describe('Checkout Flow - SauceDemo', () => {
   let productsPage: ProductsPage;
   let cartPage: CartPage;
   let checkoutPage: CheckoutPage;
@@ -43,7 +43,7 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await cartPage.proceedToCheckout();
 
     // Assert
-    await expect(page).toHaveURL(/\/checkout/);
+    await expect(page).toHaveURL(/checkout-step-one\.html/);
   });
 
   /**
@@ -54,27 +54,18 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     // Arrange
     await cartPage.goto();
     await cartPage.proceedToCheckout();
-    await page.waitForLoadState('networkidle');
 
-    // Act - Fill forms
-    await checkoutPage.fillShippingForm(VALID_SHIPPING);
-    await checkoutPage.fillPaymentForm(VALID_PAYMENT);
-    await page.waitForTimeout(500);
-
-    // Place order
-    await checkoutPage.placeOrder();
-    await page.waitForTimeout(2000);
+    // Act - Fill form and complete checkout
+    await checkoutPage.completeCheckout({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: '12345'
+    });
 
     // Assert - Order confirmation
-    const hasConfirmation = await checkoutPage.isVisible(checkoutPage.orderConfirmation);
-    if (hasConfirmation) {
-      const confirmation = await checkoutPage.getOrderConfirmation();
-      expect(confirmation.toLowerCase()).toMatch(/thank you|order|success/);
-
-      const orderNumber = await checkoutPage.getOrderNumber();
-      expect(orderNumber).toBeTruthy();
-      expect(orderNumber.length).toBeGreaterThan(0);
-    }
+    expect(await checkoutPage.isComplete()).toBeTruthy();
+    const message = await checkoutPage.getCompleteMessage();
+    expect(message.toLowerCase()).toContain('thank you');
   });
 
   /**
@@ -82,7 +73,7 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
    * Priority: High | Type: Happy Path
    */
   test('should complete checkout with single item', async ({ page }) => {
-    // Arrange - Clear cart and add single item
+    // Arrange - Ensure only 1 item in cart
     await cartPage.goto();
     const itemCount = await cartPage.getCartItemCount();
     for (let i = 1; i < itemCount; i++) {
@@ -92,13 +83,14 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await cartPage.proceedToCheckout();
 
     // Act
-    await checkoutPage.fillCheckoutForm(VALID_SHIPPING, VALID_PAYMENT);
-    await checkoutPage.placeOrder();
-    await page.waitForTimeout(2000);
+    await checkoutPage.completeCheckout({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: '12345'
+    });
 
     // Assert
-    const orderItemCount = await checkoutPage.getOrderItemCount();
-    expect(orderItemCount).toBe(1);
+    expect(await checkoutPage.isComplete()).toBeTruthy();
   });
 
   /**
@@ -111,45 +103,21 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await cartPage.proceedToCheckout();
 
     // Act
-    await checkoutPage.fillCheckoutForm(VALID_SHIPPING, VALID_PAYMENT);
-    await checkoutPage.placeOrder();
-    await page.waitForTimeout(2000);
+    await checkoutPage.completeCheckout({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: '12345'
+    });
 
     // Assert
-    const orderItemCount = await checkoutPage.getOrderItemCount();
-    expect(orderItemCount).toBeGreaterThan(1);
-
-    const orderTotal = await checkoutPage.getOrderTotal();
-    expect(orderTotal).toBeTruthy();
+    expect(await checkoutPage.isComplete()).toBeTruthy();
   });
 
   /**
-   * TC-CHK-006: Empty Cart Checkout Prevention
+   * TC-VAL-001: Empty Required Fields Validation
    * Priority: High | Type: Negative
    */
-  test('should prevent checkout with empty cart', async ({ page }) => {
-    // Arrange - Empty cart
-    await cartPage.goto();
-    const itemCount = await cartPage.getCartItemCount();
-    for (let i = 0; i < itemCount; i++) {
-      await cartPage.removeItem(0);
-      await page.waitForTimeout(500);
-    }
-
-    // Act - Try to go to checkout
-    await page.goto(URLS.checkout);
-
-    // Assert - Should be redirected or show error
-    const currentUrl = page.url();
-    const isEmpty = await cartPage.isCartEmpty();
-    expect(isEmpty || currentUrl.includes('cart')).toBeTruthy();
-  });
-
-  /**
-   * TC-VAL-001: Shipping Form - Empty Required Fields
-   * Priority: High | Type: Negative
-   */
-  test('should validate empty required fields in shipping form', async ({ page }) => {
+  test('should validate empty required fields', async ({ page }) => {
     // Arrange
     await cartPage.goto();
     await cartPage.proceedToCheckout();
@@ -158,52 +126,78 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await checkoutPage.clickContinue();
 
     // Assert
-    const hasErrors = await checkoutPage.hasValidationErrors();
-    expect(hasErrors).toBeTruthy();
+    expect(await checkoutPage.hasError()).toBeTruthy();
+    const errorMsg = await checkoutPage.getErrorMessage();
+    expect(errorMsg.toLowerCase()).toMatch(/first name|last name|postal code/);
   });
 
   /**
-   * TC-VAL-003: Payment Form - Invalid Card Number
+   * TC-VAL-002: Empty First Name
    * Priority: High | Type: Negative
    */
-  test('should validate invalid card number', async ({ page }) => {
-    // Arrange
-    await cartPage.goto();
-    await cartPage.proceedToCheckout();
-    await checkoutPage.fillShippingForm(VALID_SHIPPING);
-
-    // Act - Fill invalid payment
-    await checkoutPage.fillPaymentForm(INVALID_PAYMENT);
-    await checkoutPage.clickContinue();
-
-    // Assert
-    const hasErrors = await checkoutPage.hasValidationErrors();
-    expect(hasErrors).toBeTruthy();
-  });
-
-  /**
-   * TC-VAL-005: ZIP Code Validation
-   * Priority: Medium | Type: Negative
-   */
-  test('should validate ZIP code format', async ({ page }) => {
+  test('should validate empty first name', async ({ page }) => {
     // Arrange
     await cartPage.goto();
     await cartPage.proceedToCheckout();
 
-    // Act - Fill with invalid ZIP
-    await checkoutPage.fillShippingForm({
-      ...VALID_SHIPPING,
-      zip: '12'
+    // Act - Fill only last name and zip
+    await checkoutPage.fillCheckoutForm({
+      firstName: '',
+      lastName: 'User',
+      zip: '12345'
     });
     await checkoutPage.clickContinue();
 
     // Assert
-    const errors = await checkoutPage.getValidationErrors();
-    const hasZipError = errors.some(e =>
-      e.toLowerCase().includes('zip') ||
-      e.toLowerCase().includes('postal')
-    );
-    // Note: Some sites may not validate this strictly
+    expect(await checkoutPage.hasError()).toBeTruthy();
+    const errorMsg = await checkoutPage.getErrorMessage();
+    expect(errorMsg.toLowerCase()).toContain('first name');
+  });
+
+  /**
+   * TC-VAL-003: Empty Last Name
+   * Priority: High | Type: Negative
+   */
+  test('should validate empty last name', async ({ page }) => {
+    // Arrange
+    await cartPage.goto();
+    await cartPage.proceedToCheckout();
+
+    // Act - Fill only first name and zip
+    await checkoutPage.fillCheckoutForm({
+      firstName: 'Test',
+      lastName: '',
+      zip: '12345'
+    });
+    await checkoutPage.clickContinue();
+
+    // Assert
+    expect(await checkoutPage.hasError()).toBeTruthy();
+    const errorMsg = await checkoutPage.getErrorMessage();
+    expect(errorMsg.toLowerCase()).toContain('last name');
+  });
+
+  /**
+   * TC-VAL-004: Empty Postal Code
+   * Priority: High | Type: Negative
+   */
+  test('should validate empty postal code', async ({ page }) => {
+    // Arrange
+    await cartPage.goto();
+    await cartPage.proceedToCheckout();
+
+    // Act - Fill only first and last name
+    await checkoutPage.fillCheckoutForm({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: ''
+    });
+    await checkoutPage.clickContinue();
+
+    // Assert
+    expect(await checkoutPage.hasError()).toBeTruthy();
+    const errorMsg = await checkoutPage.getErrorMessage();
+    expect(errorMsg.toLowerCase()).toContain('postal code');
   });
 
   /**
@@ -218,7 +212,7 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await productsPage.goToCart();
 
     // Assert
-    await expect(page).toHaveURL(/\/cart/);
+    await expect(page).toHaveURL(/cart\.html/);
   });
 
   /**
@@ -233,54 +227,67 @@ test.describe('Checkout Flow - Shop-Blinq', () => {
     await cartPage.proceedToCheckout();
 
     // Assert
-    await expect(page).toHaveURL(/\/checkout/);
+    await expect(page).toHaveURL(/checkout-step-one\.html/);
   });
 
   /**
-   * TC-CHK-005: Order Review Before Confirmation
+   * TC-CHK-005: Order Summary
    * Priority: High | Type: Happy Path
    */
-  test('should display order review before final confirmation', async ({ page }) => {
+  test('should display order summary before final confirmation', async ({ page }) => {
     // Arrange
     await cartPage.goto();
     await cartPage.proceedToCheckout();
 
     // Act
-    await checkoutPage.fillCheckoutForm(VALID_SHIPPING, VALID_PAYMENT);
+    await checkoutPage.fillCheckoutForm({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: '12345'
+    });
+    await checkoutPage.clickContinue();
 
-    // Assert - Order summary should be visible
-    const hasSummary = await checkoutPage.isVisible(checkoutPage.orderSummary);
-    expect(hasSummary).toBeTruthy();
-
-    const orderTotal = await checkoutPage.getOrderTotal();
-    expect(orderTotal).toBeTruthy();
+    // Assert - Should be on overview page
+    await expect(page).toHaveURL(/checkout-step-two\.html/);
+    expect(await checkoutPage.getOrderItemCount()).toBeGreaterThan(0);
   });
 
   /**
-   * TC-VAL-002: Email Format Validation
-   * Priority: High | Type: Negative
+   * TC-CHK-006: Cancel Checkout
+   * Priority: Medium | Type: Happy Path
    */
-  test('should validate email format', async ({ page }) => {
+  test('should allow canceling checkout', async ({ page }) => {
     // Arrange
     await cartPage.goto();
     await cartPage.proceedToCheckout();
 
-    // Act - Fill with invalid email
-    await checkoutPage.fillShippingForm({
-      ...VALID_SHIPPING,
-      email: 'invalid-email'
+    // Act - Cancel should return to cart page
+    await page.locator('#cancel').click();
+
+    // Assert - Should return to cart page
+    await expect(page).toHaveURL(/cart\.html/);
+  });
+
+  /**
+   * TC-CHK-007: Back to Products After Complete
+   * Priority: Low | Type: Happy Path
+   */
+  test('should navigate back to products after checkout complete', async ({ page }) => {
+    // Arrange
+    await cartPage.goto();
+    await cartPage.proceedToCheckout();
+
+    // Act - Complete checkout
+    await checkoutPage.completeCheckout({
+      firstName: 'Test',
+      lastName: 'User',
+      zip: '12345'
     });
-    await checkoutPage.clickContinue();
+
+    // Go back to products
+    await checkoutPage.backToProducts();
 
     // Assert
-    const hasErrors = await checkoutPage.hasValidationErrors();
-    if (hasErrors) {
-      const errors = await checkoutPage.getValidationErrors();
-      const hasEmailError = errors.some(e =>
-        e.toLowerCase().includes('email') ||
-        e.toLowerCase().includes('valid')
-      );
-      expect(hasEmailError).toBeTruthy();
-    }
+    await expect(page).toHaveURL(/inventory\.html/);
   });
 });

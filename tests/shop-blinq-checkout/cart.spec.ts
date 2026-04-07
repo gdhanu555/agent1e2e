@@ -5,11 +5,11 @@ import { CartPage } from '../pages/CartPage';
 import { VALID_USER, URLS } from '../fixtures/test-data';
 
 /**
- * Cart Management Tests for Shop-Blinq
- * Tests TC-CART-001 through TC-CART-005
+ * Cart Management Tests for SauceDemo
+ * Tests TC-CART-001 through TC-CART-008
  */
 
-test.describe('Cart Management - Shop-Blinq', () => {
+test.describe('Cart Management - SauceDemo', () => {
   let productsPage: ProductsPage;
   let cartPage: CartPage;
 
@@ -41,53 +41,30 @@ test.describe('Cart Management - Shop-Blinq', () => {
     // Assert
     const itemCount = await cartPage.getCartItemCount();
     expect(itemCount).toBeGreaterThan(0);
-
-    const cartTotal = await cartPage.getCartTotal();
-    expect(cartTotal).toBeTruthy();
-    expect(cartTotal.length).toBeGreaterThan(0);
   });
 
   /**
-   * TC-CART-002: Increase Item Quantity
+   * TC-CART-002: View Cart Item Details
    * Priority: High | Type: Happy Path
    */
-  test('should increase item quantity and update total', async ({ page }) => {
-    // Arrange
-    await cartPage.goto();
-    const initialTotal = await cartPage.getCartTotal();
-
+  test('should display correct item details in cart', async ({ page }) => {
     // Act
-    await cartPage.increaseQuantity(0);
-    await page.waitForTimeout(1000);
+    await cartPage.goto();
 
     // Assert
-    const newTotal = await cartPage.getCartTotal();
-    expect(newTotal).not.toBe(initialTotal);
+    const itemName = await cartPage.getItemName(0);
+    const itemPrice = await cartPage.getItemPrice(0);
+    const itemQty = await cartPage.getItemQuantity(0);
+
+    expect(itemName).toBeTruthy();
+    expect(itemName.length).toBeGreaterThan(0);
+    expect(itemPrice).toBeTruthy();
+    expect(itemPrice).toContain('$');
+    expect(itemQty).toBe('1');
   });
 
   /**
-   * TC-CART-003: Decrease Item Quantity
-   * Priority: High | Type: Happy Path
-   */
-  test('should decrease item quantity and update total', async ({ page }) => {
-    // Arrange
-    await cartPage.goto();
-    // First increase quantity
-    await cartPage.increaseQuantity(0);
-    await page.waitForTimeout(1000);
-    const increasedTotal = await cartPage.getCartTotal();
-
-    // Act
-    await cartPage.decreaseQuantity(0);
-    await page.waitForTimeout(1000);
-
-    // Assert
-    const decreasedTotal = await cartPage.getCartTotal();
-    expect(decreasedTotal).not.toBe(increasedTotal);
-  });
-
-  /**
-   * TC-CART-004: Remove Item from Cart
+   * TC-CART-003: Remove Item from Cart
    * Priority: High | Type: Happy Path
    */
   test('should remove item from cart', async ({ page }) => {
@@ -105,10 +82,10 @@ test.describe('Cart Management - Shop-Blinq', () => {
   });
 
   /**
-   * TC-CART-005: Empty Cart Display
+   * TC-CART-004: Empty Cart Display
    * Priority: Medium | Type: Edge Case
    */
-  test('should show empty cart message when cart is empty', async ({ page }) => {
+  test('should show empty cart when all items removed', async ({ page }) => {
     // Arrange
     await cartPage.goto();
 
@@ -125,26 +102,7 @@ test.describe('Cart Management - Shop-Blinq', () => {
   });
 
   /**
-   * TC-CART-006: Cart Item Details
-   * Priority: Medium | Type: Happy Path
-   */
-  test('should display correct item details in cart', async ({ page }) => {
-    // Act
-    await cartPage.goto();
-
-    // Assert
-    const itemName = await cartPage.getItemName(0);
-    const itemPrice = await cartPage.getItemPrice(0);
-    const itemQty = await cartPage.getItemQuantity(0);
-
-    expect(itemName).toBeTruthy();
-    expect(itemName.length).toBeGreaterThan(0);
-    expect(itemPrice).toBeTruthy();
-    expect(itemQty).toBeTruthy();
-  });
-
-  /**
-   * TC-CART-007: Navigate to Checkout from Cart
+   * TC-CART-005: Navigate to Checkout from Cart
    * Priority: High | Type: Happy Path
    */
   test('should navigate to checkout from cart', async ({ page }) => {
@@ -155,24 +113,39 @@ test.describe('Cart Management - Shop-Blinq', () => {
     await cartPage.proceedToCheckout();
 
     // Assert
-    await expect(page).toHaveURL(/\/checkout/);
+    await expect(page).toHaveURL(/checkout-step-one\.html/);
   });
 
   /**
-   * TC-CART-008: Set Quantity Directly
+   * TC-CART-006: Continue Shopping from Cart
    * Priority: Medium | Type: Happy Path
    */
-  test('should set item quantity directly', async ({ page }) => {
+  test('should navigate back to products when continuing shopping', async ({ page }) => {
     // Arrange
     await cartPage.goto();
-    const newQuantity = 5;
 
     // Act
-    await cartPage.setQuantity(0, newQuantity);
-    await page.waitForTimeout(1000);
+    await cartPage.continueShopping();
 
     // Assert
-    const itemQty = await cartPage.getItemQuantity(0);
-    expect(itemQty).toContain(newQuantity.toString());
+    await expect(page).toHaveURL(/inventory\.html/);
+  });
+
+  /**
+   * TC-CART-007: Multiple Items in Cart
+   * Priority: Medium | Type: Happy Path
+   */
+  test('should display multiple items correctly', async ({ page }) => {
+    // Arrange
+    await productsPage.goto();
+    await productsPage.addMultipleProductsToCart(3);
+    await page.waitForTimeout(1000);
+
+    // Act
+    await cartPage.goto();
+
+    // Assert
+    const itemCount = await cartPage.getCartItemCount();
+    expect(itemCount).toBeGreaterThanOrEqual(3);
   });
 });

@@ -4,11 +4,11 @@ import { ProductsPage } from '../pages/ProductsPage';
 import { VALID_USER, URLS } from '../fixtures/test-data';
 
 /**
- * Product Browsing Tests for Shop-Blinq
- * Tests TC-PROD-001 through TC-PROD-003
+ * Product Browsing Tests for SauceDemo
+ * Tests TC-PROD-001 through TC-PROD-005
  */
 
-test.describe('Products - Shop-Blinq', () => {
+test.describe('Products - SauceDemo', () => {
   let productsPage: ProductsPage;
 
   test.beforeEach(async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe('Products - Shop-Blinq', () => {
 
     // Assert
     expect(productCount).toBeGreaterThan(0);
-    await productsPage.waitForVisible(productsPage.productGrid);
+    await productsPage.waitForVisible(productsPage.productList);
   });
 
   /**
@@ -50,7 +50,6 @@ test.describe('Products - Shop-Blinq', () => {
 
     // Assert
     const newCount = await productsPage.getCartCount();
-    // Cart count should increase (handle both numeric and text counts)
     const initialNum = parseInt(initialCount) || 0;
     const newNum = parseInt(newCount) || 0;
     expect(newNum).toBeGreaterThan(initialNum);
@@ -83,7 +82,7 @@ test.describe('Products - Shop-Blinq', () => {
     await productsPage.goToCart();
 
     // Assert
-    await expect(page).toHaveURL(/\/cart/);
+    await expect(page).toHaveURL(/cart\.html/);
   });
 
   /**
@@ -102,6 +101,6 @@ test.describe('Products - Shop-Blinq', () => {
     expect(productName).toBeTruthy();
     expect(productName.length).toBeGreaterThan(0);
     expect(productPrice).toBeTruthy();
-    expect(productPrice).toMatch(/\$|€|£/); // Should contain currency symbol
+    expect(productPrice).toContain('$');
   });
 });
